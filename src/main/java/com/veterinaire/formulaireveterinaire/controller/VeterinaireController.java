@@ -25,13 +25,6 @@ public class VeterinaireController {
         this.veterinaireService = veterinaireService;
     }
 
-    /**
-     * Updates the veterinary profile for a specific user with an optional image and subscription type.
-     * @param userId The ID of the user whose profile is being updated.
-     * @param image The image file to upload (optional).
-     * @param subscriptionType The initial subscription type (optional).
-     * @return Response with success message.
-     */
 
     @PostMapping(value = "/update", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<String> updateVeterinaireProfile(
@@ -54,7 +47,5 @@ public class VeterinaireController {
         UserDTO userDTO = veterinaireService.getVeterinaireByEmail(userDetails.getUsername());
         return ResponseEntity.ok(userDTO); // subscription info included even if expired
     }
-
-
 
 }

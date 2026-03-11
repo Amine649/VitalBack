@@ -25,8 +25,8 @@ public class SubscriptionStatusUpdater {
         this.userRepository = userRepository;
     }
 
-    @Scheduled(cron = "0 * * * * *") // Run every minute (for testing)
-    // @Scheduled(cron = "0 0 0 * * *") // Run daily at midnight
+   // @Scheduled(cron = "0 * * * * *") // Run every minute (for testing)
+    @Scheduled(cron = "0 0 0 * * *") // Run daily at midnight
     public void updateExpiredSubscriptions() {
         logger.info("Checking for expired subscriptions at {}", LocalDateTime.now());
         List<Subscription> subscriptions = subscriptionRepository.findAll();

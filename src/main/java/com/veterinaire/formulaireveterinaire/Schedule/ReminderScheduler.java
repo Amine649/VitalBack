@@ -43,8 +43,8 @@ public class ReminderScheduler {
     @Value("${finance.email}")
     private String financeEmail;
 
-   @Scheduled(cron = "0 * * * * *") // Run every minute (for testing)
-    //@Scheduled(cron = "0 0 0 * * *") // Run daily at midnight
+   //@Scheduled(cron = "0 * * * * *") // Run every minute (for testing)
+   @Scheduled(cron = "0 0 0 * * *") // Run daily at midnight
     public void checkExpiredSubscriptions() {
         logger.info("Checking for subscription reminders at {}", LocalDateTime.now());
         List<User> users = userRepository.findAllByStatus(SubscriptionStatus.ACTIVE);

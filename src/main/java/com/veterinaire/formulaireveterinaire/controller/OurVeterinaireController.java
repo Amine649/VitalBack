@@ -9,7 +9,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/veterinaires")
+@RequestMapping("/api/ourveterinaires")
 public class OurVeterinaireController {
     private final OurVeterinaireService ourVeterinaireService;
 

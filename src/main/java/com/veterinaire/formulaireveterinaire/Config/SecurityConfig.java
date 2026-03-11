@@ -51,22 +51,15 @@ public class SecurityConfig {
                         )
                 )
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/login", "/api/logout" ,"/api/users/register").permitAll()
-                        .requestMatchers("/api/reset-password").authenticated()
-                        .requestMatchers("/api/forgot-password-otp").permitAll()
-                        .requestMatchers("/api/reset-password-otp").permitAll()
+                        .requestMatchers("/api/login", "/api/logout" ,"/api/users/register","/api/reset-password","/api/forgot-password-otp","/api/reset-password-otp").permitAll()
+                        // For Formulaire 1
                         .requestMatchers("/api/users/**").hasRole("ADMIN")
-                        .requestMatchers("/api/products/all").permitAll()
-                        .requestMatchers("/api/products/*/variants").permitAll()
-                        .requestMatchers("/api/cart/items/*").permitAll()
 
+                        .requestMatchers("/api/products/**").permitAll()
+                        .requestMatchers("/api/products/*/variants").permitAll()
 
                         .requestMatchers("/api/cabinets/all").permitAll()
                         .requestMatchers("/api/boutiques/all").permitAll()
-                        .requestMatchers("/api/products/add").permitAll()
-                        .requestMatchers("api/cart/commercial-checkout").permitAll()
-                        .requestMatchers("/api/veterinaires/update").permitAll()
-
 
                         .requestMatchers("/api/blogs/all").permitAll()
                         .requestMatchers("/api/blogs/type/**").permitAll()
@@ -79,12 +72,6 @@ public class SecurityConfig {
 
                         .requestMatchers("/api/blogs/pdf/**").permitAll()
 
-                        .requestMatchers("/api/blogs/add").permitAll()
-                        .requestMatchers("/api/blogs/add").permitAll()
-
-
-                        //
-                        .requestMatchers("/api/veterinaires").permitAll()
                         .anyRequest().authenticated()
                 )
                 .exceptionHandling(ex -> ex
@@ -103,7 +90,7 @@ public class SecurityConfig {
 
 
         http.addFilterBefore(
-                new JwtAuthenticationFilter(jwtUtil, userDetailsService, subscriptionRepository, userRepository),
+                new JwtAuthenticationFilter(jwtUtil, userDetailsService),
                 UsernamePasswordAuthenticationFilter.class
         );
 
