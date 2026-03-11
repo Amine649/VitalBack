@@ -42,12 +42,22 @@ public class AuthController {
             boolean isAdmin = (Boolean) authResult.get("isAdmin");
 
             // Set JWT in httpOnly cookie
+            //for test Locally
+//            ResponseCookie cookie = ResponseCookie.from("access_token", token)
+//                    .httpOnly(true)
+//                    .secure(false)          // false for localhost dev, true in prod + HTTPS
+//                    .path("/")
+//                    .maxAge(7 * 24 * 60 * 60) // 7 days
+//                    .sameSite("Lax")        // or "None" + secure=true in prod
+//                    .build();
+
+            //for production
             ResponseCookie cookie = ResponseCookie.from("access_token", token)
                     .httpOnly(true)
-                    .secure(false)          // false for localhost dev, true in prod + HTTPS
+                    .secure(true)           // REQUIRED for SameSite=None
                     .path("/")
-                    .maxAge(7 * 24 * 60 * 60) // 7 days
-                    .sameSite("Lax")        // or "None" + secure=true in prod
+                    .maxAge(7 * 24 * 60 * 60)
+                    .sameSite("None")       // REQUIRED for cross-site cookies
                     .build();
 
             response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
