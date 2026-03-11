@@ -12,7 +12,7 @@ public class CorsConfig {
             @Override
             public void addCorsMappings(CorsRegistry registry) {
                 registry.addMapping("/api/**")
-                        .allowedOrigins("http://localhost:4200", "https://localhost:4200") // Angular dev server
+                        .allowedOrigins("http://localhost:4200", "https://vitalback.onrender.com") // Angular dev server
                         .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH")
                         .allowedHeaders("*")
                         .allowCredentials(true); // Autorise les cookies/tokens
