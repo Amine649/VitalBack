@@ -80,10 +80,11 @@ public class SecurityConfig {
                         .requestMatchers("/api/blogs/pdf/**").permitAll()
 
                         .requestMatchers("/api/blogs/add").permitAll()
+                        .requestMatchers("/api/blogs/add").permitAll()
 
 
-
-
+                        //
+                        .requestMatchers("/api/veterinaires").permitAll()
                         .anyRequest().authenticated()
                 )
                 .exceptionHandling(ex -> ex
