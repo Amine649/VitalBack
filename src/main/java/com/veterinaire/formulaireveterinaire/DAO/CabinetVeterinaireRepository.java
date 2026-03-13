@@ -9,4 +9,6 @@ import java.util.Optional;
 public interface CabinetVeterinaireRepository extends JpaRepository<CabinetVeterinaire, Long> {
     Optional<CabinetVeterinaire> findByName(String name);
     Optional<CabinetVeterinaire> findByLatitudeAndLongitudeAndAddress(double latitude, double longitude, String address);
+
+    Optional<CabinetVeterinaire> findByMatricule(String matricule);
 }

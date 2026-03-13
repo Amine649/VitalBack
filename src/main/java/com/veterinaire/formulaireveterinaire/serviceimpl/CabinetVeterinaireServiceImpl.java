@@ -5,6 +5,7 @@ import com.veterinaire.formulaireveterinaire.DAO.OurVeterinaireRepository;
 import com.veterinaire.formulaireveterinaire.entity.CabinetVeterinaire;
 import com.veterinaire.formulaireveterinaire.entity.OurVeterinaire;
 import com.veterinaire.formulaireveterinaire.service.CabinetVeterinaireService;
+import jakarta.transaction.Transactional;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.json.JSONArray;
@@ -29,8 +30,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.text.DecimalFormat;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @Service
 public class CabinetVeterinaireServiceImpl implements CabinetVeterinaireService {
@@ -90,7 +93,6 @@ public class CabinetVeterinaireServiceImpl implements CabinetVeterinaireService 
             CabinetVeterinaire existing = existingByName.get();
             existing.setName(cabinet.getName());
             existing.setAddress(cabinet.getAddress());
-            existing.setCity(cabinet.getCity());
             existing.setPhone(cabinet.getPhone());
             existing.setLatitude(cabinet.getLatitude());
             existing.setLongitude(cabinet.getLongitude());
@@ -105,6 +107,99 @@ public class CabinetVeterinaireServiceImpl implements CabinetVeterinaireService 
             return cabinetVeterinaireRepository.save(cabinet);
         }
     }
+
+    @Override
+    public String importCabinetsFromExcel(MultipartFile file) {
+
+        int inserted = 0;
+        int updated = 0;
+
+        try (InputStream inputStream = file.getInputStream();
+             Workbook workbook = new XSSFWorkbook(inputStream)) {
+
+            Sheet sheet = workbook.getSheetAt(0);
+            Iterator<Row> rows = sheet.iterator();
+
+            // Skip header
+            if (rows.hasNext()) {
+                rows.next();
+            }
+
+            while (rows.hasNext()) {
+
+                Row row = rows.next();
+
+                String name = row.getCell(0).getStringCellValue().trim();
+                String matricule = row.getCell(1).getStringCellValue().trim();
+                String address = row.getCell(2).getStringCellValue().trim();
+                String phone = row.getCell(3).getStringCellValue().trim();
+                String maps = row.getCell(4).getStringCellValue().trim();
+
+                String[] coordinates = maps.split(",");
+
+                double latitude = Double.parseDouble(coordinates[0].trim());
+                double longitude = Double.parseDouble(coordinates[1].trim());
+
+                // -------- VALIDATION ----------
+                if (matricule.isEmpty()) {
+                    logger.warn("Matricule vide pour le cabinet {}", name);
+                    continue;
+                }
+
+                // Check matricule exists in OurVeterinaire
+                Optional<OurVeterinaire> vet = ourVeterinaireRepository.findByMatricule(matricule);
+                if (vet.isEmpty()) {
+                    logger.warn("Matricule {} n'existe pas dans OurVeterinaire. Ligne ignorée.", matricule);
+                    continue;
+                }
+
+                // Check duplicate location
+                Optional<CabinetVeterinaire> existingByLocation =
+                        cabinetVeterinaireRepository.findByLatitudeAndLongitudeAndAddress(latitude, longitude, address);
+
+                if (existingByLocation.isPresent() && !existingByLocation.get().getName().equals(name)) {
+                    logger.warn("Cabinet déjà existant à cette localisation: {}", name);
+                    continue;
+                }
+
+                CabinetVeterinaire cabinet = new CabinetVeterinaire();
+                cabinet.setName(name);
+                cabinet.setMatricule(matricule);
+                cabinet.setAddress(address);
+                cabinet.setPhone(phone);
+                cabinet.setLatitude(latitude);
+                cabinet.setLongitude(longitude);
+
+                // Check if cabinet with same name exists
+                Optional<CabinetVeterinaire> existingByName = cabinetVeterinaireRepository.findByName(name);
+
+                if (existingByName.isPresent()) {
+
+                    CabinetVeterinaire existing = existingByName.get();
+
+                    existing.setAddress(address);
+                    existing.setPhone(phone);
+                    existing.setLatitude(latitude);
+                    existing.setLongitude(longitude);
+                    existing.setMatricule(matricule);
+
+                    cabinetVeterinaireRepository.save(existing);
+                    updated++;
+
+                } else {
+
+                    cabinetVeterinaireRepository.save(cabinet);
+                    inserted++;
+                }
+            }
+
+        } catch (Exception e) {
+            throw new RuntimeException("Erreur lors du traitement du fichier Excel : " + e.getMessage());
+        }
+
+        return inserted + " cabinets ajoutés, " + updated + " cabinets mis à jour.";
+    }
+
 
     @Override
     public CabinetVeterinaire updateCabinet(Long id, CabinetVeterinaire cabinet) throws Exception {
@@ -160,7 +255,6 @@ public class CabinetVeterinaireServiceImpl implements CabinetVeterinaireService 
         CabinetVeterinaire toUpdate = existing.get();
         toUpdate.setName(cabinet.getName());
         toUpdate.setAddress(cabinet.getAddress());
-        toUpdate.setCity(cabinet.getCity());
         toUpdate.setPhone(cabinet.getPhone());
         toUpdate.setLatitude(cabinet.getLatitude());
         toUpdate.setLongitude(cabinet.getLongitude());

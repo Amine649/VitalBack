@@ -10,4 +10,5 @@ public interface CabinetVeterinaireService {
     CabinetVeterinaire updateCabinet(Long id, CabinetVeterinaire cabinet) throws Exception;
     void deleteCabinet(Long id) throws Exception;
     List<CabinetVeterinaire> getAllCabinets();
+    String importCabinetsFromExcel(MultipartFile file);
 }

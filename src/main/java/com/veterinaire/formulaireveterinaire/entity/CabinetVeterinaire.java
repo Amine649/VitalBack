@@ -21,9 +21,6 @@ public class CabinetVeterinaire {
     private String address;
 
     @Column(nullable = true)
-    private String City;
-
-    @Column(nullable = true)
     private String phone;
 
     @Column(nullable = true)

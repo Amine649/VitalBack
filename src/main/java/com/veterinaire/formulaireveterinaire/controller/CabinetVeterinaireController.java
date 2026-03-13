@@ -4,8 +4,11 @@ import com.veterinaire.formulaireveterinaire.entity.CabinetVeterinaire;
 import com.veterinaire.formulaireveterinaire.service.CabinetVeterinaireService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -33,6 +36,14 @@ public class CabinetVeterinaireController {
             logger.error("Erreur serveur lors de l'enregistrement du cabinet: {}", e.getMessage());
             return ResponseEntity.status(500).body("Erreur serveur lors de l'enregistrement du cabinet.");
         }
+    }
+
+    @PostMapping("/upload")
+    public ResponseEntity<?> uploadCabinets(@RequestParam("file") MultipartFile file) {
+
+        String result = cabinetVeterinaireService.importCabinetsFromExcel(file);
+
+        return ResponseEntity.ok(result);
     }
 
     @GetMapping("all")

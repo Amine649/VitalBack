@@ -54,64 +54,76 @@ public class UserServiceImpl implements UserService {
             throw new RuntimeException("Matricule non disponible");
         }
 
+
         // Vérifie si un utilisateur existe déjà avec ce matricule
+//        Optional<User> existingUserOpt = userRepository.findByNumMatricule(user.getNumMatricule());
+
+//        if (existingUserOpt.isPresent()) {
+//
+//            // ===== Cas 1 : utilisateur existant → mise à jour =====
+//            User existingUser = existingUserOpt.get();
+//
+//            boolean emailChanged =
+//                    !existingUser.getEmail().equalsIgnoreCase(user.getEmail());
+//
+//            // 🔄 Mise à jour des champs autorisés
+//            existingUser.setNom(user.getNom());
+//            existingUser.setPrenom(user.getPrenom());
+//            existingUser.setEmail(user.getEmail());
+//            existingUser.setTelephone(user.getTelephone());
+//            existingUser.setAdresseCabinet(user.getAdresseCabinet());
+//
+//            // 🔐 Sécurité : empêche modification des rôles via API
+//            existingUser.setAdmin(false);
+//            existingUser.setCommercial(false);
+//
+//            boolean shouldSendMail =
+//                    existingUser.getStatus() != SubscriptionStatus.ACTIVE
+//                            || emailChanged;
+//
+//            if (shouldSendMail) {
+//
+//                String newPassword = generateRandomPassword();
+//
+//                existingUser.setPassword(
+//                        passwordEncoder.encode(newPassword)
+//                );
+//
+//                sendWelcomeEmail(
+//                        existingUser.getEmail(),
+//                        newPassword,
+//                        existingUser.getNom()
+//                );
+//
+//                existingUser.setStatus(SubscriptionStatus.INACTIVE);
+//
+//            } else {
+//
+//                logger.info(
+//                        "Aucun mail envoyé à {} (utilisateur actif sans changement d'email)",
+//                        existingUser.getEmail()
+//                );
+//            }
+//
+//            userRepository.save(existingUser);
+//
+//            return shouldSendMail
+//                    ? "Utilisateur mis à jour et email envoyé."
+//                    : "Utilisateur mis à jour sans envoi d'email.";
+//
+//        }
+//         {
+
         Optional<User> existingUserOpt = userRepository.findByNumMatricule(user.getNumMatricule());
 
         if (existingUserOpt.isPresent()) {
 
-            // ===== Cas 1 : utilisateur existant → mise à jour =====
-            User existingUser = existingUserOpt.get();
-
-            boolean emailChanged =
-                    !existingUser.getEmail().equalsIgnoreCase(user.getEmail());
-
-            // 🔄 Mise à jour des champs autorisés
-            existingUser.setNom(user.getNom());
-            existingUser.setPrenom(user.getPrenom());
-            existingUser.setEmail(user.getEmail());
-            existingUser.setTelephone(user.getTelephone());
-            existingUser.setAdresseCabinet(user.getAdresseCabinet());
-
-            // 🔐 Sécurité : empêche modification des rôles via API
-            existingUser.setAdmin(false);
-            existingUser.setCommercial(false);
-
-            boolean shouldSendMail =
-                    existingUser.getStatus() != SubscriptionStatus.ACTIVE
-                            || emailChanged;
-
-            if (shouldSendMail) {
-
-                String newPassword = generateRandomPassword();
-
-                existingUser.setPassword(
-                        passwordEncoder.encode(newPassword)
-                );
-
-                sendWelcomeEmail(
-                        existingUser.getEmail(),
-                        newPassword,
-                        existingUser.getNom()
-                );
-
-                existingUser.setStatus(SubscriptionStatus.INACTIVE);
-
-            } else {
-
-                logger.info(
-                        "Aucun mail envoyé à {} (utilisateur actif sans changement d'email)",
-                        existingUser.getEmail()
-                );
-            }
-
-            userRepository.save(existingUser);
-
-            return shouldSendMail
-                    ? "Utilisateur mis à jour et email envoyé."
-                    : "Utilisateur mis à jour sans envoi d'email.";
-
-        } else {
-
+            // ❌ Bloquer l'inscription
+            throw new RuntimeException(
+                    "Un utilisateur avec le matricule " + user.getNumMatricule() + " possède déjà un compte."
+            );
+        }
+            else {
             // ===== Cas 2 : nouvel utilisateur → création =====
 
             if (userRepository.findByEmail(user.getEmail()).isPresent()) {

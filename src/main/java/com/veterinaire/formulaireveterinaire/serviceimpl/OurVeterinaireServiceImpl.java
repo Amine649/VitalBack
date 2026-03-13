@@ -53,12 +53,12 @@ public class OurVeterinaireServiceImpl implements OurVeterinaireService {
             }
 
             // Expected column names
-            String[] expectedHeaders = {"nom", "prenom", "matricule", "email"};
+            String[] expectedHeaders = {"nom", "matricule", "email"};
             boolean headersValid = validateHeaders(headerRow, expectedHeaders);
 
             if (!headersValid) {
-                logger.error("Les colonnes de l'en-tête ne correspondent pas à 'nom', 'prenom', 'matricule'.");
-                throw new IllegalArgumentException("Les colonnes de l'en-tête doivent être exactement 'nom', 'prenom', 'matricule'.");
+                logger.error("Les colonnes de l'en-tête ne correspondent pas à 'nom', 'matricule'.");
+                throw new IllegalArgumentException("Les colonnes de l'en-tête doivent être exactement 'nom', 'matricule'.");
             }
 
             // Process data rows
@@ -67,22 +67,20 @@ public class OurVeterinaireServiceImpl implements OurVeterinaireService {
 
                 // Get cells with null check
                 Cell nomCell = row.getCell(0, Row.MissingCellPolicy.RETURN_NULL_AND_BLANK);
-                Cell prenomCell = row.getCell(1, Row.MissingCellPolicy.RETURN_NULL_AND_BLANK);
-                Cell matriculeCell = row.getCell(2, Row.MissingCellPolicy.RETURN_NULL_AND_BLANK);
-                Cell emailCell = row.getCell(3, Row.MissingCellPolicy.RETURN_NULL_AND_BLANK);
+                Cell matriculeCell = row.getCell(1, Row.MissingCellPolicy.RETURN_NULL_AND_BLANK);
+                Cell emailCell = row.getCell(2, Row.MissingCellPolicy.RETURN_NULL_AND_BLANK);
 
                 // Handle different cell types
                 String nom = getCellValueAsString(nomCell).trim();
-                String prenom = getCellValueAsString(prenomCell).trim();
                 String matricule = getCellValueAsString(matriculeCell).trim();
                 String email = getCellValueAsString(emailCell).trim();
 
                 // Check for null or empty values
-                if (nomCell == null || prenomCell == null || matriculeCell == null || emailCell == null
-                        || nom.isEmpty() || prenom.isEmpty() || matricule.isEmpty() || email.isEmpty()) {
+                if (nomCell == null  || matriculeCell == null || emailCell == null
+                        || nom.isEmpty()  || matricule.isEmpty() || email.isEmpty()) {
 
                     String errorMessage = String.format(
-                            "Ligne %d est incomplète : tous les champs (nom, prenom, matricule, email) doivent être remplis.",
+                            "Ligne %d est incomplète : tous les champs (nom, matricule, email) doivent être remplis.",
                             row.getRowNum() + 1
                     );
                     logger.error(errorMessage);
@@ -94,7 +92,6 @@ public class OurVeterinaireServiceImpl implements OurVeterinaireService {
                     // Update existing
                     OurVeterinaire vet = existing.get();
                     vet.setNom(nom);
-                    vet.setPrenom(prenom);
                     vet.setEmail(email);
                     ourVeterinaireRepository.save(vet);
                     logger.info("Mise à jour de OurVeterinaire pour matricule: {} (Ligne {})", matricule, row.getRowNum() + 1);
@@ -102,7 +99,6 @@ public class OurVeterinaireServiceImpl implements OurVeterinaireService {
                     // Create new
                     OurVeterinaire vet = new OurVeterinaire();
                     vet.setNom(nom);
-                    vet.setPrenom(prenom);
                     vet.setMatricule(matricule);
                     vet.setEmail(email);
                     ourVeterinaireRepository.save(vet);

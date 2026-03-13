@@ -119,7 +119,7 @@ public class CommercialOrderServiceImpl implements CommercialOrderService {
         CommercialCartResponse resp = new CommercialCartResponse();
         resp.setCartId(cart.getId());
         resp.setVetMatricule(vetMatricule);
-        resp.setVetFullName(vet.getNom() + " " + vet.getPrenom());
+        resp.setVetFullName(vet.getNom() + " " );
         resp.setTotalAmount(cart.getTotalAmount());
         resp.setItems(items);
 
