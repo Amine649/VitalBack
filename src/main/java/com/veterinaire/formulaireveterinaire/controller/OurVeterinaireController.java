@@ -32,4 +32,17 @@ public class OurVeterinaireController {
             return ResponseEntity.badRequest().body("Erreur : " + e.getMessage());
         }
     }
+
+    @PutMapping("/update/{id}")
+    public ResponseEntity<OurVeterinaire> updateVeterinaire(
+            @PathVariable Long id,
+            @RequestBody OurVeterinaire vetDetails) {
+        return ResponseEntity.ok(ourVeterinaireService.updateVeterinaire(id, vetDetails));
+    }
+
+    @DeleteMapping("/delete/{id}")
+    public ResponseEntity<Void> deleteVeterinaire(@PathVariable Long id) {
+        ourVeterinaireService.deleteVeterinaire(id);
+        return ResponseEntity.noContent().build();
+    }
 }

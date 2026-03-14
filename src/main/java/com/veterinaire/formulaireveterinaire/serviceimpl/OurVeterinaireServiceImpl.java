@@ -16,6 +16,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Optional;
 
 @Service
@@ -28,6 +29,35 @@ public class OurVeterinaireServiceImpl implements OurVeterinaireService {
         this.ourVeterinaireRepository = ourVeterinaireRepository;
     }
 
+    @Override
+    public OurVeterinaire getVeterinaireById(Long id) {
+        return ourVeterinaireRepository.findById(id)
+                .orElseThrow(() -> new NoSuchElementException(
+                        "Vétérinaire non trouvé avec l'id : " + id
+                ));
+    }
+
+    @Override
+    public OurVeterinaire updateVeterinaire(Long id, OurVeterinaire vetDetails) {
+        OurVeterinaire existing = getVeterinaireById(id);  // re-uses the method above
+
+        existing.setNom(vetDetails.getNom());
+        existing.setEmail(vetDetails.getEmail());
+        // existing.setMatricule(...)  ← usually forbidden after creation
+
+        logger.info("Mise à jour vétérinaire id = {}", id);
+        return ourVeterinaireRepository.save(existing);
+    }
+
+    @Override
+    public void deleteVeterinaire(Long id) {
+        OurVeterinaire vet = getVeterinaireById(id);
+
+        ourVeterinaireRepository.delete(vet);
+        // or: ourVeterinaireRepository.deleteById(id);  // also correct & slightly faster
+
+        logger.info("Suppression vétérinaire id = {}", id);
+    }
 
 
     @Override
