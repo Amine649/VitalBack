@@ -43,7 +43,6 @@ public class CommercialOrderServiceImpl implements CommercialOrderService {
 
     private final CartOrderRepository cartOrderRepo;
     private final OrderItemRepository itemRepo;
-    private final UserRepository userRepo;
     private final ProductRepository productRepo;
     private final OurVeterinaireRepository ourVeterinaireRepository;
     private final JavaMailSender mailSender;
@@ -81,72 +80,88 @@ public class CommercialOrderServiceImpl implements CommercialOrderService {
     }
 
 
-
     @Override
     public CommercialCartResponse getOrCreateCommercialCart(String vetMatricule) {
+
+        // Load or create cart for this veterinarian
         CartOrder cart = loadOrCreateCommercialCart(vetMatricule);
 
-        List<CartItemDto> items = itemRepo.findByOrderId(cart.getId()).stream()
-                .map(item -> {
-                    Product p = productRepo.findById(item.getProductId())
-                            .orElseThrow(() -> new EntityNotFoundException("Produit introuvable"));
+        // Get all items in the cart
+        List<OrderItem> items = itemRepo.findByOrderId(cart.getId());
 
-                    CartItemDto dto = new CartItemDto();
-                    dto.setItemId(item.getId());
-                    dto.setProductId(item.getProductId());
-                    dto.setProductName(p.getName());
-                    dto.setImageUrl(p.getImageUrl());
-                    dto.setQuantity(item.getQuantity());
-                    dto.setPrice(item.getPrice());
-                    dto.setSubTotal(item.getPrice().multiply(BigDecimal.valueOf(item.getQuantity())));
+        // Convert items to DTO
+        List<CartItemDto> itemDtos = items.stream().map(item -> {
 
-                    // ✅ add variant info
-                    if (item.getVariantId() != null) {
-                        variantRepo.findById(item.getVariantId()).ifPresent(variant -> {
-                            dto.setVariantId(variant.getId());
-                            dto.setPackaging(variant.getPackaging());
-                        });
-                    }
+            Product product = productRepo.findById(item.getProductId())
+                    .orElseThrow(() ->
+                            new EntityNotFoundException("Product not found: " + item.getProductId()));
 
-                    return dto;
-                })
-                .toList();
+            CartItemDto dto = new CartItemDto();
+            dto.setItemId(item.getId());
+            dto.setProductId(item.getProductId());
+            dto.setProductName(product.getName());
+            dto.setImageUrl(product.getImageUrl());
+            dto.setQuantity(item.getQuantity());
+            dto.setPrice(item.getPrice());
+            dto.setSubTotal(item.getPrice().multiply(BigDecimal.valueOf(item.getQuantity())));
 
+            // Add variant info if exists
+            if (item.getVariantId() != null) {
+                variantRepo.findById(item.getVariantId()).ifPresent(variant -> {
+                    dto.setVariantId(variant.getId());
+                    dto.setPackaging(variant.getPackaging());
+                });
+            }
+
+            return dto;
+
+        }).toList();
+
+        // Get veterinarian info
         OurVeterinaire vet = ourVeterinaireRepository
                 .findByMatricule(vetMatricule)
-                .orElseThrow();
+                .orElseThrow(() ->
+                        new EntityNotFoundException("Veterinaire not found: " + vetMatricule));
 
-        CommercialCartResponse resp = new CommercialCartResponse();
-        resp.setCartId(cart.getId());
-        resp.setVetMatricule(vetMatricule);
-        resp.setVetFullName(vet.getNom() + " " );
-        resp.setTotalAmount(cart.getTotalAmount());
-        resp.setItems(items);
+        // Build response
+        CommercialCartResponse response = new CommercialCartResponse();
+        response.setCartId(cart.getId());
+        response.setVetMatricule(vetMatricule);
+        response.setVetFullName(vet.getNom() + " " );
+        response.setVetEmail(vet.getEmail()); // optional if exists
+        response.setTotalAmount(cart.getTotalAmount());
+        response.setItems(itemDtos);
 
-        return resp;
+        return response;
     }
-
 
     @Override
     @Transactional
-    public CartItemDto addItemToCommercialCart(String vetMatricule, CommercialCartItemRequest request, Long commercialUserId) {
+    public CartItemDto addItemToCommercialCart(String vetMatricule,
+                                               CommercialCartItemRequest request,
+                                               Long commercialUserId) {
+
         CartOrder cart = loadOrCreateCommercialCart(vetMatricule);
 
         Product product = productRepo.findById(request.getProductId())
                 .orElseThrow(() -> new EntityNotFoundException("Produit introuvable"));
 
-        List<ProductVariant> variants = variantRepo.findByProductId(request.getProductId());
-        if (variants.isEmpty()) {
-            throw new IllegalArgumentException("Product has no variants configured");
-        }
-        ProductVariant defaultVariant = variants.get(0);
+        // ✅ use the selected variant from the request
+        ProductVariant variant = variantRepo.findById(request.getVariantId())
+                .orElseThrow(() -> new EntityNotFoundException("Variant introuvable"));
 
-        // ✅ match by productId AND variantId — allows same product different variant
-        Optional<OrderItem> existingOpt = itemRepo.findByOrderIdAndProductIdAndVariantId(
-                cart.getId(),
-                request.getProductId(),
-                defaultVariant.getId()
-        );
+        // Optional security check
+        if (!variant.getProduct().getId().equals(product.getId())) {
+            throw new IllegalArgumentException("Variant does not belong to product");
+        }
+
+        // ✅ match by product + variant
+        Optional<OrderItem> existingOpt =
+                itemRepo.findByOrderIdAndProductIdAndVariantId(
+                        cart.getId(),
+                        request.getProductId(),
+                        request.getVariantId()
+                );
 
         OrderItem item;
         int quantityToAdd = request.getQuantity();
@@ -158,21 +173,22 @@ public class CommercialOrderServiceImpl implements CommercialOrderService {
             item = new OrderItem();
             item.setOrderId(cart.getId());
             item.setProductId(request.getProductId());
-            item.setVariantId(defaultVariant.getId());
-            item.setPrice(defaultVariant.getPrice());
+            item.setVariantId(request.getVariantId());
+            item.setPrice(variant.getPrice());
             item.setQuantity(quantityToAdd);
         }
 
         itemRepo.save(item);
+
         recalculateTotal(cart.getId());
 
         CartItemDto dto = new CartItemDto();
         dto.setItemId(item.getId());
-        dto.setProductId(item.getProductId());
+        dto.setProductId(product.getId());
         dto.setProductName(product.getName());
         dto.setImageUrl(product.getImageUrl());
-        dto.setVariantId(defaultVariant.getId());
-        dto.setPackaging(defaultVariant.getPackaging());
+        dto.setVariantId(variant.getId());
+        dto.setPackaging(variant.getPackaging());
         dto.setQuantity(item.getQuantity());
         dto.setPrice(item.getPrice());
         dto.setSubTotal(item.getPrice().multiply(BigDecimal.valueOf(item.getQuantity())));
