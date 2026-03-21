@@ -39,11 +39,15 @@ public class VeterinaireServiceImpl implements VeterinaireService {
     @Value("${finance.email}")
     private String financeEmail;
 
+    @Value("${app.upload.ordonnance-dir}")
+    private String uploadDir;
 
     @Override
     public String updateVeterinaireProfile(Long userId, MultipartFile image, SubscriptionType subscriptionType) {
+
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé avec l'ID : " + userId));
+
         logger.info("Updating veterinary profile for user ID: {}", userId);
 
         VeterinaireProfile profile = user.getVeterinaireProfile();
@@ -52,24 +56,54 @@ public class VeterinaireServiceImpl implements VeterinaireService {
             profile.setUser(user);
             user.setVeterinaireProfile(profile);
         }
+
         if (image != null && !image.isEmpty()) {
-            String fileName = user.getTelephone() + "_" + image.getOriginalFilename();
-            String filePath = "C:/Users/Amine/Documents/FormulaireVeterinaire/FormulaireVeterinaire/uploads/" + fileName;
             try {
+                // ✅ Clean filename
+                String originalName = image.getOriginalFilename() != null ? image.getOriginalFilename() : "file";
+                String safeName = originalName.replaceAll("\\s+", "_");
+
+                String tel = user.getTelephone() != null ? user.getTelephone() : "user";
+                String fileName = tel + "_" + System.currentTimeMillis() + "_" + safeName;
+
+                // ✅ Directory
+                String uploadDir = System.getProperty("user.dir")
+                        + File.separator + "uploads"
+                        + File.separator + "Ordonnance";
+
+                File directory = new File(uploadDir);
+                if (!directory.exists()) {
+                    directory.mkdirs();
+                }
+
+                // ✅ FULL FILE PATH (THIS WAS YOUR MAIN BUG)
+                String filePath = uploadDir + File.separator + fileName;
+
                 image.transferTo(new File(filePath));
-                profile.setImagePath(filePath);
+
+                // ✅ Save filename only
+                profile.setImagePath(fileName);
+
                 logger.info("Image saved at {} for user ID: {}", filePath, userId);
+
             } catch (IOException e) {
                 logger.error("Error saving image for user ID {}: {}", userId, e.getMessage());
                 throw new RuntimeException("Erreur lors de l'enregistrement de l'image", e);
             }
         }
+
         if (subscriptionType != null) {
             profile.setSubscriptionType(subscriptionType);
             logger.info("Subscription type {} set for user ID: {}", subscriptionType, userId);
         }
+
         userRepository.save(user);
-        sendSubscriptionEmail(user.getEmail(), user.getNom(),subscriptionType.name(), financeEmail);
+
+        // ✅ avoid NullPointerException
+        if (subscriptionType != null) {
+            sendSubscriptionEmail(user.getEmail(), user.getNom(), subscriptionType.name(), financeEmail);
+        }
+
         return "Profil vétérinaire mis à jour avec succès pour l'utilisateur ID " + userId + ".";
     }
 
