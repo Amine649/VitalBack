@@ -1,13 +1,12 @@
 package com.veterinaire.formulaireveterinaire.Schedule;
 
+import com.veterinaire.formulaireveterinaire.Config.BrevoEmailService;
 import com.veterinaire.formulaireveterinaire.Enums.SubscriptionStatus;
 import com.veterinaire.formulaireveterinaire.DAO.SubscriptionRepository;
 import com.veterinaire.formulaireveterinaire.DAO.UserRepository;
 import com.veterinaire.formulaireveterinaire.entity.Subscription;
 import com.veterinaire.formulaireveterinaire.entity.User;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.mail.javamail.JavaMailSender;
-import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.slf4j.Logger;
@@ -27,17 +26,17 @@ public class ReminderScheduler {
 
     private final SubscriptionRepository subscriptionRepository;
     private final UserRepository userRepository;
-    private final JavaMailSender mailSender;
+    private final BrevoEmailService emailService;
 
     private static final Logger logger = LoggerFactory.getLogger(ReminderScheduler.class);
 
     // In-memory Set to track subscriptions for which reminders have been sent
     private final Set<Long> sentReminderIds = new HashSet<>();
 
-    public ReminderScheduler(SubscriptionRepository subscriptionRepository, UserRepository userRepository, JavaMailSender mailSender) {
+    public ReminderScheduler(SubscriptionRepository subscriptionRepository, UserRepository userRepository, BrevoEmailService emailService) {
         this.subscriptionRepository = subscriptionRepository;
         this.userRepository = userRepository;
-        this.mailSender = mailSender;
+        this.emailService = emailService;
     }
 
     @Value("${finance.email}")
@@ -94,13 +93,8 @@ public class ReminderScheduler {
     }
 
     private void sendReminderEmail(String email, String prenom, Long subscriptionId, LocalDateTime endDate) {
-        MimeMessage message = mailSender.createMimeMessage();
         try {
-            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
-            helper.setTo(email);
-            helper.setCc(financeEmail);
-            helper.setSubject("🔔 Rappel : Votre abonnement arrive à expiration");
-            helper.setFrom("damino.awadi@gmail.com");
+            String subject = "🔔 Rappel : Votre abonnement arrive à expiration";
 
             String htmlContent = """
             <!DOCTYPE html>
@@ -172,10 +166,10 @@ public class ReminderScheduler {
             </html>
         """.formatted(prenom, subscriptionId, endDate.format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")));
 
-            helper.setText(htmlContent, true);
-            mailSender.send(message);
+            emailService.sendEmail(email, subject, htmlContent, financeEmail);
 
-        } catch (MessagingException e) {
+
+        } catch (Exception e) {
             throw new RuntimeException("Erreur lors de l'envoi de l'email de rappel HTML", e);
         }
     }

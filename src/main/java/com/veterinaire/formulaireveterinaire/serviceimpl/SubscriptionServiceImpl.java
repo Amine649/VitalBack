@@ -1,5 +1,6 @@
 package com.veterinaire.formulaireveterinaire.serviceimpl;
 
+import com.veterinaire.formulaireveterinaire.Config.BrevoEmailService;
 import com.veterinaire.formulaireveterinaire.Enums.SubscriptionStatus;
 import com.veterinaire.formulaireveterinaire.Enums.SubscriptionType;
 import com.veterinaire.formulaireveterinaire.DAO.SubscriptionRepository;
@@ -9,13 +10,11 @@ import com.veterinaire.formulaireveterinaire.DTO.UserDTO;
 import com.veterinaire.formulaireveterinaire.entity.Subscription;
 import com.veterinaire.formulaireveterinaire.entity.User;
 import com.veterinaire.formulaireveterinaire.service.SubscriptionService;
-import jakarta.mail.MessagingException;
-import jakarta.mail.internet.MimeMessage;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.mail.javamail.JavaMailSender;
-import org.springframework.mail.javamail.MimeMessageHelper;
+
 import org.springframework.stereotype.Service;
 
 
@@ -31,16 +30,17 @@ public class SubscriptionServiceImpl implements SubscriptionService {
     private static final Logger logger = LoggerFactory.getLogger(SubscriptionServiceImpl.class);
     private final UserRepository userRepository;
     private final SubscriptionRepository subscriptionRepository;
-    private final JavaMailSender mailSender;
+    private final BrevoEmailService emailService;
 
     @Value("${finance.email}")
     private String financeEmail;
 
     public SubscriptionServiceImpl(UserRepository userRepository, SubscriptionRepository subscriptionRepository,
-                                   JavaMailSender mailSender) {
+                                   BrevoEmailService emailService) {
         this.userRepository = userRepository;
         this.subscriptionRepository = subscriptionRepository;
-        this.mailSender = mailSender;
+        this.emailService = emailService;
+
     }
 
     @Override
@@ -186,19 +186,14 @@ public class SubscriptionServiceImpl implements SubscriptionService {
 
     private void sendSubscriptionEmail(User user, SubscriptionType subscriptionType,
                                        LocalDateTime startDate, LocalDateTime endDate, String ccEmail) {
-        MimeMessage message = mailSender.createMimeMessage();
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
         String startDateStr = startDate.format(formatter);
         String endDateStr = endDate.format(formatter);
 
         try {
-            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
-            helper.setTo(user.getEmail());
-            helper.setCc(financeEmail);
-            helper.setSubject("Confirmation de votre Abonnement – VITALFEED");
-
             String nom = user.getNom() != null ? user.getNom() : "Cher utilisateur";
             boolean isPlanned = startDate.isAfter(LocalDateTime.now());
+            String subject = "Confirmation de votre Abonnement – VITALFEED";
 
             String htmlContent = """
         <html>
@@ -265,11 +260,11 @@ public class SubscriptionServiceImpl implements SubscriptionService {
                     String.valueOf(LocalDate.now().getYear())
             );
 
-            helper.setText(htmlContent, true);
-            mailSender.send(message);
+            // Send to vet
+            emailService.sendEmail(user.getEmail(), subject, htmlContent, ccEmail);
 
             logger.info("Subscription email sent to {} with CC to {}", user.getEmail(), ccEmail);
-        } catch (MessagingException e) {
+        } catch (Exception e) {
             logger.error("Failed to send subscription email to {}: {}", user.getEmail(), e.getMessage());
             throw new RuntimeException("Erreur lors de l'envoi de l'email de confirmation", e);
         }
@@ -279,18 +274,13 @@ public class SubscriptionServiceImpl implements SubscriptionService {
 
     private void sendSubscriptionUpdateEmail(User user, SubscriptionType subscriptionType,
                                              LocalDateTime startDate, LocalDateTime endDate, String ccEmail) {
-        MimeMessage message = mailSender.createMimeMessage();
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
         String startDateStr = startDate.format(formatter);
         String endDateStr = endDate.format(formatter);
 
         try {
-            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
-            helper.setTo(user.getEmail());
-            helper.setCc(financeEmail);
-            helper.setSubject("Confirmation de mise à jour de votre abonnement – VITALFEED");
-
             String nom = user.getNom() != null ? user.getNom() : "Cher utilisateur";
+            String subject = "Confirmation de mise à jour de votre abonnement – VITALFEED";
 
             String htmlContent = """
         <html>
@@ -364,11 +354,11 @@ public class SubscriptionServiceImpl implements SubscriptionService {
                     String.valueOf(LocalDate.now().getYear())
             );
 
-            helper.setText(htmlContent, true);
-            mailSender.send(message);
+            // Send to vet
+            emailService.sendEmail(user.getEmail(), subject, htmlContent, ccEmail);
 
             logger.info("Subscription update email sent to {} with CC to {}", user.getEmail(), ccEmail);
-        } catch (MessagingException e) {
+        } catch (Exception e) {
             logger.error("Failed to send subscription update email to {}: {}", user.getEmail(), e.getMessage());
             throw new RuntimeException("Erreur lors de l'envoi de l'e-mail de mise à jour", e);
         }

@@ -1,5 +1,6 @@
 package com.veterinaire.formulaireveterinaire.serviceimpl;
 
+import com.veterinaire.formulaireveterinaire.Config.BrevoEmailService;
 import com.veterinaire.formulaireveterinaire.DAO.OurVeterinaireRepository;
 import com.veterinaire.formulaireveterinaire.DAO.ProductRepository;
 import com.veterinaire.formulaireveterinaire.DAO.ProductVariantRepository;
@@ -13,16 +14,12 @@ import com.veterinaire.formulaireveterinaire.Enums.OrderStatus;
 import com.veterinaire.formulaireveterinaire.DAO.Cart.CartOrderRepository;
 import com.veterinaire.formulaireveterinaire.DAO.Cart.OrderItemRepository;
 import com.veterinaire.formulaireveterinaire.service.CartService;
-import jakarta.mail.MessagingException;
-import jakarta.mail.internet.MimeMessage;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.mail.javamail.JavaMailSender;
-import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -41,14 +38,14 @@ public class CartServiceImpl implements CartService {
     private final OrderItemRepository itemRepo;
     private final UserRepository userRepo;
     private final ProductRepository productRepo;
-    private final JavaMailSender mailSender;
+    private final BrevoEmailService emailService;
     private final OurVeterinaireRepository ourVeterinaireRepository;
 
     @Autowired
     private ProductVariantRepository variantRepo;
 
-    @Value("${finance.email}")
-    private String financeEmail;
+    @Value("${commercial.email}")
+    private String commercialEmail;
 
     private static final Logger logger = LoggerFactory.getLogger(CartServiceImpl.class);
 
@@ -296,23 +293,18 @@ public class CartServiceImpl implements CartService {
                 : user.getEmail();
 
         // SEND EMAIL with the provided email
-        sendOrderConfirmationEmail(user, cart, emailToUse, financeEmail);
+        sendOrderConfirmationEmail(user, cart, commercialEmail);
 
         return orderNumber;
     }
 
-    private void sendOrderConfirmationEmail(User user, CartOrder order, String ccEmail, String financeEmail) {
-        MimeMessage message = mailSender.createMimeMessage();
+    private void sendOrderConfirmationEmail(User user, CartOrder order, String ccEmail) {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
         String orderDateStr = order.getConfirmedAt().format(formatter);
 
         try {
-            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
-            helper.setTo(user.getEmail());
-            helper.setCc(ccEmail);
-            helper.setSubject("Commande Confirmée – VITALFEED");
-
             String nom = user.getNom() != null ? user.getNom() : "Cher client";
+            String subject = "Commande Confirmée – VITALFEED";
 
             List<OrderItem> items = itemRepo.findByOrderId(order.getId());
             StringBuilder itemsHtml = new StringBuilder();
@@ -449,12 +441,12 @@ public class CartServiceImpl implements CartService {
                     String.valueOf(LocalDate.now().getYear())
             );
 
-            helper.setText(htmlContent, true);
-            mailSender.send(message);
+            emailService.sendEmail(user.getEmail(), subject, htmlContent, ccEmail);
+
 
             logger.info("Order confirmation email sent to {} with CC to {}", user.getEmail(), ccEmail);
 
-        } catch (MessagingException e) {
+        } catch (Exception e) {
             logger.error("Failed to send order email: {}", e.getMessage());
             throw new RuntimeException("Erreur lors de l'envoi de l'email", e);
         }

@@ -10,14 +10,10 @@ import com.veterinaire.formulaireveterinaire.DAO.UserRepository;
 import com.veterinaire.formulaireveterinaire.entity.Subscription;
 import com.veterinaire.formulaireveterinaire.entity.User;
 import com.veterinaire.formulaireveterinaire.service.UserService;
-import jakarta.mail.MessagingException;
-import jakarta.mail.internet.MimeMessage;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.mail.javamail.JavaMailSender;
-import org.springframework.mail.javamail.MimeMessageHelper;
+
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -34,7 +30,7 @@ public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
     private final OurVeterinaireRepository ourVeterinaireRepository;
     private final PasswordEncoder passwordEncoder;
-  //  private final JavaMailSender mailSender;
+
 
     private final BrevoEmailService emailService;
 
@@ -45,7 +41,6 @@ public class UserServiceImpl implements UserService {
         this.userRepository = userRepository;
         this.ourVeterinaireRepository = ourVeterinaireRepository;
         this.passwordEncoder = passwordEncoder;
-        //this.mailSender = mailSender;
         this.emailService = emailService;
     }
 
@@ -322,7 +317,7 @@ public class UserServiceImpl implements UserService {
                     String.valueOf(LocalDate.now().getYear())
             );
 
-            emailService.sendEmail(to, subject, htmlContent);
+            emailService.sendEmail(to, subject, htmlContent, null);
 
             logger.info("Professional welcome email sent to {}", to);
 

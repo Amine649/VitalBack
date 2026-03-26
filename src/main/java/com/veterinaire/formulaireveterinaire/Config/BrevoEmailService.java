@@ -32,7 +32,7 @@ public class BrevoEmailService {
     }
 
 
-    public void sendEmail(String to, String subject, String htmlContent) {
+    public void sendEmail(String to, String subject, String htmlContent,String cc) {
 
         String url = "https://api.brevo.com/v3/smtp/email";
 
@@ -50,7 +50,6 @@ public class BrevoEmailService {
             // ✅ Recipient
             Map<String, String> toMap = new HashMap<>();
             toMap.put("email", to);
-
             List<Map<String, String>> toList = new ArrayList<>();
             toList.add(toMap);
 
@@ -60,6 +59,14 @@ public class BrevoEmailService {
             body.put("to", toList);
             body.put("subject", subject);
             body.put("htmlContent", htmlContent);
+
+            if (cc != null && !cc.isBlank()) {
+                Map<String, String> ccMap = new HashMap<>();
+                ccMap.put("email", cc);
+                List<Map<String, String>> ccList = new ArrayList<>();
+                ccList.add(ccMap);
+                body.put("cc", ccList);
+            }
 
             HttpEntity<Map<String, Object>> request = new HttpEntity<>(body, headers);
 

@@ -1,17 +1,14 @@
 package com.veterinaire.formulaireveterinaire.serviceimpl;
 
+import com.veterinaire.formulaireveterinaire.Config.BrevoEmailService;
 import com.veterinaire.formulaireveterinaire.DAO.UserRepository;
 import com.veterinaire.formulaireveterinaire.entity.User;
 import com.veterinaire.formulaireveterinaire.service.ForgotPasswordService;
-import jakarta.mail.MessagingException;
-import jakarta.mail.internet.MimeMessage;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.mail.javamail.JavaMailSender;
-import org.springframework.mail.javamail.MimeMessageHelper;
+
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,11 +25,10 @@ public class ForgotPasswordServiceImpl implements ForgotPasswordService {
     private static final Logger logger = LoggerFactory.getLogger(ForgotPasswordServiceImpl.class);
 
     private final UserRepository userRepository;
-    private final JavaMailSender mailSender;
+    private final BrevoEmailService emailService;
     private final PasswordEncoder passwordEncoder;
 
-    @Value("${app.email.from:noreply@vitalfeed.com}")
-    private String fromEmail;
+
 
     private static final int OTP_VALIDITY_MINUTES = 5;
     private static final int OTP_LENGTH = 6;
@@ -135,15 +131,10 @@ public class ForgotPasswordServiceImpl implements ForgotPasswordService {
 
 
     private void sendOtpEmail(User user, String otp) {
-        MimeMessage message = mailSender.createMimeMessage();
 
         try {
-            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
-            helper.setFrom(fromEmail);
-            helper.setTo(user.getEmail());
-            helper.setSubject("Code de vérification Compte – VITALFEED –");
-
             String nom = user.getNom() != null ? user.getNom() : "Cher utilisateur";
+            String subject = "Code de vérification Compte – VITALFEED –";
 
             String htmlContent = """
                 <html>
@@ -200,14 +191,12 @@ public class ForgotPasswordServiceImpl implements ForgotPasswordService {
                     String.valueOf(LocalDate.now().getYear())
             );
 
-            helper.setText(htmlContent, true);
-            mailSender.send(message);
+            emailService.sendEmail(user.getEmail(), subject, htmlContent, null);
 
             logger.info("OTP email sent to {}", user.getEmail());
 
-        } catch (MessagingException e) {
+        } catch (Exception e) {
             logger.error("Failed to send OTP email to {}: {}", user.getEmail(), e.getMessage());
-            // You can choose to throw or just log (depending on your preference)
         }
     }
 }

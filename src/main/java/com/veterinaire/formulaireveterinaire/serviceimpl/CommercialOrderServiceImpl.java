@@ -1,5 +1,6 @@
 package com.veterinaire.formulaireveterinaire.serviceimpl;
 
+import com.veterinaire.formulaireveterinaire.Config.BrevoEmailService;
 import com.veterinaire.formulaireveterinaire.DAO.Cart.CartOrderRepository;
 import com.veterinaire.formulaireveterinaire.DAO.ProductVariantRepository;
 import com.veterinaire.formulaireveterinaire.DTO.Cart.CartItemDto;
@@ -18,17 +19,10 @@ import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
-
-
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.mail.javamail.JavaMailSender;
-import org.springframework.mail.javamail.MimeMessageHelper;
-
 import com.veterinaire.formulaireveterinaire.DAO.Cart.OrderItemRepository;
 import com.veterinaire.formulaireveterinaire.DAO.OurVeterinaireRepository;
 import com.veterinaire.formulaireveterinaire.DAO.ProductRepository;
-import com.veterinaire.formulaireveterinaire.DAO.UserRepository;
-
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -45,7 +39,7 @@ public class CommercialOrderServiceImpl implements CommercialOrderService {
     private final OrderItemRepository itemRepo;
     private final ProductRepository productRepo;
     private final OurVeterinaireRepository ourVeterinaireRepository;
-    private final JavaMailSender mailSender;
+    private final BrevoEmailService emailService;
 
 
     @Autowired
@@ -356,18 +350,14 @@ public class CommercialOrderServiceImpl implements CommercialOrderService {
         return resp;
     }
 
+
     private void sendCommercialOrderEmail(OurVeterinaire user, CartOrder order) {
-        MimeMessage message = mailSender.createMimeMessage();
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
         String orderDateStr = order.getConfirmedAt().format(formatter);
 
         try {
-            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
-            helper.setTo(user.getEmail());
-            helper.setCc(financeEmail);
-            helper.setSubject("Commande passée pour vous – VITALFEED");
-
             String nom = user.getNom() != null ? user.getNom() : "Cher vétérinaire";
+            String subject = "Commande passée pour vous – VITALFEED";
 
             List<OrderItem> items = itemRepo.findByOrderId(order.getId());
             StringBuilder itemsHtml = new StringBuilder();
@@ -502,14 +492,14 @@ public class CommercialOrderServiceImpl implements CommercialOrderService {
                     String.valueOf(LocalDate.now().getYear())
             );
 
-            helper.setText(htmlContent, true);
-            mailSender.send(message);
+            emailService.sendEmail(user.getEmail(), subject, htmlContent, financeEmail);
+
 
             log.info("Email commande commerciale envoyé à {} (matricule {})",
                     user.getEmail(),
                     user.getMatricule());
 
-        } catch (MessagingException e) {
+        } catch (Exception e) {
             log.error("Échec envoi email commercial", e);
         }
     }

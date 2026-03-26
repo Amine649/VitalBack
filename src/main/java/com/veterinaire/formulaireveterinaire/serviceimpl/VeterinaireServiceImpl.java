@@ -1,5 +1,6 @@
 package com.veterinaire.formulaireveterinaire.serviceimpl;
 
+import com.veterinaire.formulaireveterinaire.Config.BrevoEmailService;
 import com.veterinaire.formulaireveterinaire.DTO.SubscriptionDTO;
 import com.veterinaire.formulaireveterinaire.DTO.UserDTO;
 import com.veterinaire.formulaireveterinaire.Enums.SubscriptionType;
@@ -8,13 +9,11 @@ import com.veterinaire.formulaireveterinaire.entity.Subscription;
 import com.veterinaire.formulaireveterinaire.entity.User;
 import com.veterinaire.formulaireveterinaire.entity.VeterinaireProfile;
 import com.veterinaire.formulaireveterinaire.service.VeterinaireService;
-import jakarta.mail.MessagingException;
-import jakarta.mail.internet.MimeMessage;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.mail.javamail.JavaMailSender;
-import org.springframework.mail.javamail.MimeMessageHelper;
+
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -27,13 +26,12 @@ import java.time.LocalDate;
 public class VeterinaireServiceImpl implements VeterinaireService {
     private static final Logger logger = LoggerFactory.getLogger(VeterinaireServiceImpl.class);
     private final UserRepository userRepository;
-    private final JavaMailSender mailSender;
+    private final BrevoEmailService emailService;
 
 
-    public VeterinaireServiceImpl(UserRepository userRepository, JavaMailSender mailSender) {
+    public VeterinaireServiceImpl(UserRepository userRepository, BrevoEmailService emailService) {
         this.userRepository = userRepository;
-        this.mailSender = mailSender;
-
+        this.emailService = emailService;
     }
 
     @Value("${finance.email}")
@@ -153,13 +151,9 @@ public class VeterinaireServiceImpl implements VeterinaireService {
 
 
     private void sendSubscriptionEmail(String to, String nom, String subscriptionType, String financeEmail) {
-        MimeMessage message = mailSender.createMimeMessage();
 
         try {
-            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
-            helper.setTo(to);
-            helper.setCc(financeEmail);
-            helper.setSubject("Confirmation de votre abonnement – VITALFEED");
+            String subject = "Confirmation de votre abonnement – VITALFEED";
 
             String duree;
             switch (subscriptionType) {
@@ -239,11 +233,11 @@ public class VeterinaireServiceImpl implements VeterinaireService {
                     String.valueOf(LocalDate.now().getYear())
             );
 
-            helper.setText(htmlContent, true);
-            mailSender.send(message);
+            emailService.sendEmail(to, subject, htmlContent, financeEmail);
+
 
             logger.info("Subscription confirmation email sent to {}", to);
-        } catch (MessagingException e) {
+        } catch (Exception e) {
             logger.error("Failed to send subscription email to {}: {}", to, e.getMessage());
             throw new RuntimeException("Erreur lors de l'envoi de l'e-mail de confirmation d'abonnement", e);
         }
