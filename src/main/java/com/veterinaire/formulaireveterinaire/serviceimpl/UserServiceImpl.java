@@ -1,5 +1,6 @@
 package com.veterinaire.formulaireveterinaire.serviceimpl;
 
+import com.veterinaire.formulaireveterinaire.Config.BrevoEmailService;
 import com.veterinaire.formulaireveterinaire.DTO.SubscriptionDTO;
 import com.veterinaire.formulaireveterinaire.DTO.UserDTO;
 import com.veterinaire.formulaireveterinaire.Enums.SubscriptionStatus;
@@ -33,16 +34,19 @@ public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
     private final OurVeterinaireRepository ourVeterinaireRepository;
     private final PasswordEncoder passwordEncoder;
-    private final JavaMailSender mailSender;
+  //  private final JavaMailSender mailSender;
+
+    private final BrevoEmailService emailService;
 
     public UserServiceImpl(UserRepository userRepository,
                            OurVeterinaireRepository ourVeterinaireRepository,
                            PasswordEncoder passwordEncoder,
-                           JavaMailSender mailSender) {
+                           BrevoEmailService emailService) {
         this.userRepository = userRepository;
         this.ourVeterinaireRepository = ourVeterinaireRepository;
         this.passwordEncoder = passwordEncoder;
-        this.mailSender = mailSender;
+        //this.mailSender = mailSender;
+        this.emailService = emailService;
     }
 
     @Override
@@ -212,12 +216,9 @@ public class UserServiceImpl implements UserService {
 
     private void sendWelcomeEmail(String to, String password, String nom)
     {
-        MimeMessage message = mailSender.createMimeMessage();
+        String subject = "Bienvenue sur VITALFEED – Votre espace vétérinaire est prêt";
 
         try {
-            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
-            helper.setTo(to);
-            helper.setSubject("Bienvenue sur VITALFEED – Votre espace vétérinaire est prêt");
 
             String webPortalLink = "https://vitalfeed.tn/espace-veterinaire";
             String appDownloadLink = "https://vitalfeed.tn/telechargement";
@@ -321,11 +322,11 @@ public class UserServiceImpl implements UserService {
                     String.valueOf(LocalDate.now().getYear())
             );
 
-            helper.setText(htmlContent, true);
-            mailSender.send(message);
+            emailService.sendEmail(to, subject, htmlContent);
 
             logger.info("Professional welcome email sent to {}", to);
-        } catch (MessagingException e) {
+
+        } catch (Exception e) {   // ✅ FIX HERE
             logger.error("Failed to send welcome email to {}: {}", to, e.getMessage());
             throw new RuntimeException("Erreur lors de l'envoi de l'e-mail de bienvenue", e);
         }
