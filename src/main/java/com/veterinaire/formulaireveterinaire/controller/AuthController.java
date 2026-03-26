@@ -56,7 +56,7 @@ public class AuthController {
                     .httpOnly(true)
                     .secure(true)           // REQUIRED for SameSite=None
                     .path("/")
-                    .maxAge(7 * 24 * 60 * 60)
+                    .maxAge(2 * 60 * 60) // 2 hours
                     .sameSite("None")       // REQUIRED for cross-site cookies
                     .build();
 
