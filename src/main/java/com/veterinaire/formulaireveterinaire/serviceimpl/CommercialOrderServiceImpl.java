@@ -46,9 +46,8 @@ public class CommercialOrderServiceImpl implements CommercialOrderService {
     private ProductVariantRepository variantRepo;
 
 
-    @Value("${finance.email}")
-    private String financeEmail;
-
+    @Value("${commande.email}")
+    private String commandeEmail;
 
     private static final Logger log = LoggerFactory.getLogger(CommercialOrderServiceImpl.class);
 
@@ -492,7 +491,7 @@ public class CommercialOrderServiceImpl implements CommercialOrderService {
                     String.valueOf(LocalDate.now().getYear())
             );
 
-            emailService.sendEmail(user.getEmail(), subject, htmlContent, financeEmail);
+            emailService.sendEmail(user.getEmail(), subject, htmlContent, commandeEmail);
 
 
             log.info("Email commande commerciale envoyé à {} (matricule {})",

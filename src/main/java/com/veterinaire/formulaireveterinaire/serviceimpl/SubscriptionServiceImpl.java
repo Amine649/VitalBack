@@ -264,6 +264,7 @@ public class SubscriptionServiceImpl implements SubscriptionService {
             emailService.sendEmail(user.getEmail(), subject, htmlContent, ccEmail);
 
             logger.info("Subscription email sent to {} with CC to {}", user.getEmail(), ccEmail);
+
         } catch (Exception e) {
             logger.error("Failed to send subscription email to {}: {}", user.getEmail(), e.getMessage());
             throw new RuntimeException("Erreur lors de l'envoi de l'email de confirmation", e);

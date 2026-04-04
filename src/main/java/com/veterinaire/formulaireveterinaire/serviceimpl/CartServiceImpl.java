@@ -44,8 +44,8 @@ public class CartServiceImpl implements CartService {
     @Autowired
     private ProductVariantRepository variantRepo;
 
-    @Value("${commercial.email}")
-    private String commercialEmail;
+    @Value("${commande.email}")
+    private String commandeEmail;
 
     private static final Logger logger = LoggerFactory.getLogger(CartServiceImpl.class);
 
@@ -293,7 +293,7 @@ public class CartServiceImpl implements CartService {
                 : user.getEmail();
 
         // SEND EMAIL with the provided email
-        sendOrderConfirmationEmail(user, cart, commercialEmail);
+        sendOrderConfirmationEmail(user, cart, commandeEmail);
 
         return orderNumber;
     }

@@ -16,10 +16,8 @@ public class BrevoEmailService {
     private final String apiKey;
     private final String senderEmail;
     private final String senderName;
-
     private final RestTemplate restTemplate;
 
-    // ✅ Constructor injection (FIXES null issue)
     public BrevoEmailService(
             @Value("${brevo.api.key}") String apiKey,
             @Value("${brevo.sender.email}") String senderEmail,
@@ -31,13 +29,11 @@ public class BrevoEmailService {
         this.restTemplate = new RestTemplate();
     }
 
-
-    public void sendEmail(String to, String subject, String htmlContent,String cc) {
+    public void sendEmail(String to, String subject, String htmlContent, String cc) {
 
         String url = "https://api.brevo.com/v3/smtp/email";
 
         try {
-            // ✅ Headers
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
             headers.set("api-key", apiKey);
@@ -53,30 +49,41 @@ public class BrevoEmailService {
             List<Map<String, String>> toList = new ArrayList<>();
             toList.add(toMap);
 
+            // ✅ BCC → sender gets a copy (appears in Sent / Inbox)
+            Map<String, String> bccMap = new HashMap<>();
+            bccMap.put("email", senderEmail);
+            bccMap.put("name", senderName);
+            List<Map<String, String>> bccList = new ArrayList<>();
+            bccList.add(bccMap);
+
             // ✅ Body
             Map<String, Object> body = new HashMap<>();
             body.put("sender", sender);
             body.put("to", toList);
             body.put("subject", subject);
             body.put("htmlContent", htmlContent);
+            body.put("bcc", bccList); // 👈 Always BCC the sender
 
+            // ✅ CC (optional, passed from caller)
             if (cc != null && !cc.isBlank()) {
                 Map<String, String> ccMap = new HashMap<>();
                 ccMap.put("email", cc);
                 List<Map<String, String>> ccList = new ArrayList<>();
                 ccList.add(ccMap);
-                body.put("cc", ccList);
+                body.put("cc", ccList); // 👈 CC recipient also gets it
             }
 
             HttpEntity<Map<String, Object>> request = new HttpEntity<>(body, headers);
 
-            // ✅ Send request
             ResponseEntity<String> response =
                     restTemplate.postForEntity(url, request, String.class);
 
-            // ✅ Success log
             if (response.getStatusCode().is2xxSuccessful()) {
-                System.out.println("✅ Email sent successfully to: " + to);
+                System.out.println("✅ Email sent to: " + to);
+                System.out.println("✅ BCC copy sent to sender: " + senderEmail);
+                if (cc != null && !cc.isBlank()) {
+                    System.out.println("✅ CC copy sent to: " + cc);
+                }
             } else {
                 throw new RuntimeException("❌ Brevo error: " + response.getBody());
             }
