@@ -234,6 +234,7 @@ public class SubscriptionServiceImpl implements SubscriptionService {
                         </div>
 
                         <div style="margin-top:35px;">
+                            <p style="font-size:15px;">Vous pouvez vous connecter avec vos identifiants de connexion déjà envoyés.</p>
                             <p style="font-size:15px;">Merci pour votre confiance et bienvenue dans la communauté VITALFEED 🐾</p>
                             <p style="margin-top:20px; font-weight:600;">Bien cordialement,</p>
                             <p style="margin-top:5px; color:#00897B; font-weight:700;">L’équipe VITALFEED</p>

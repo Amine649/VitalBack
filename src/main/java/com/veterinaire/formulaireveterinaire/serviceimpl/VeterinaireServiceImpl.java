@@ -200,7 +200,7 @@ public class VeterinaireServiceImpl implements VeterinaireService {
                                     Afin de finaliser votre inscription, veuillez nous confirmer le paiement via :
                                 </p>
                                 <p style="font-size:16px; text-align:center; margin:20px 0;">
-                                    <a href="mailto:%s" style="color:#00897B; font-weight:bold; text-decoration:none;">vitalnutri@vitalfeed.com.tn\s</a>
+                                    <a href="mailto:%s" style="color:#00897B; font-weight:bold; text-decoration:none;">financier@vitalfeed.com.tn\s</a>
                                 </p>
                                 <p style="font-size:14px; color:#777;">
                                     Un email Vous Sera Transmis Après Validations Et Vous Informons Que Votre Compte Est Désormais Activé
