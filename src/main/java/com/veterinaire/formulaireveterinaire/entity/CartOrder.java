@@ -25,7 +25,7 @@ public class CartOrder {
     @Column(nullable = false)
     private OrderStatus status = OrderStatus.CART;
 
-    @Column(name = "order_number", unique = true)
+    @Column(name = "order_number")
     private String orderNumber;               // NULL for carts
 
     @Column(name = "total_amount", precision = 10, scale = 2)

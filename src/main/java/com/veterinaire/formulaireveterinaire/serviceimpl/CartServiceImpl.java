@@ -28,6 +28,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -51,14 +52,18 @@ public class CartServiceImpl implements CartService {
 
     // --- Helper: Get or create CART ---
     private CartOrder getOrCreateCart(Long userId) {
-        return cartOrderRepo.findByUserIdAndStatus(userId, OrderStatus.CART)
-                .orElseGet(() -> {
-                    CartOrder cart = new CartOrder();
-                    cart.setUserId(userId);
-                    cart.setStatus(OrderStatus.CART);
-                    cart.setTotalAmount(BigDecimal.ZERO);
-                    return cartOrderRepo.save(cart);
-                });
+        Optional<CartOrder> existing = cartOrderRepo.findByUserIdAndStatus(userId, OrderStatus.CART);
+        System.out.println(">>> Existing cart found: " + existing.isPresent());
+
+        return existing.orElseGet(() -> {
+            CartOrder cart = new CartOrder();
+            cart.setUserId(userId);
+            cart.setStatus(OrderStatus.CART);
+            cart.setTotalAmount(BigDecimal.ZERO);
+            CartOrder saved = cartOrderRepo.save(cart);
+            System.out.println(">>> New cart saved with ID: " + saved.getId());
+            return saved;
+        });
     }
 
     // --- Recalculate total ---
@@ -147,47 +152,6 @@ public class CartServiceImpl implements CartService {
 
         return dto;
     }
-
-//    @Override
-//    @Transactional
-//    public CartItemDto addItem(Long userId, CartItemRequest req) {
-//        CartOrder cart = getOrCreateCart(userId);
-//
-//        Product product = productRepo.findById(req.getProductId())
-//                .orElseThrow(() -> new EntityNotFoundException("Product not found: " + req.getProductId()));
-//
-//        // ✅ get first variant price automatically
-//        List<ProductVariant> variants = variantRepo.findByProductId(req.getProductId());
-//
-//        if (variants.isEmpty()) {
-//            throw new IllegalArgumentException("Product has no variants configured");
-//        }
-//
-//        ProductVariant defaultVariant = variants.get(0); // first variant as default
-//        BigDecimal price = defaultVariant.getPrice();
-//
-//        OrderItem item = new OrderItem();
-//        item.setOrderId(cart.getId());
-//        item.setProductId(req.getProductId());
-//        item.setVariantId(defaultVariant.getId()); // ✅ store default variant
-//        item.setQuantity(req.getQuantity());
-//        item.setPrice(price);
-//        item = itemRepo.save(item);
-//
-//        recalcTotal(cart.getId());
-//
-//        CartItemDto dto = new CartItemDto();
-//        dto.setItemId(item.getId());
-//        dto.setProductId(item.getProductId());
-//        dto.setProductName(product.getName());
-//        dto.setImageUrl(product.getImageUrl());
-//        dto.setVariantId(defaultVariant.getId());
-//        dto.setPackaging(defaultVariant.getPackaging()); // ✅ show which packaging was selected
-//        dto.setQuantity(item.getQuantity());
-//        dto.setPrice(item.getPrice());
-//        dto.setSubTotal(item.getPrice().multiply(BigDecimal.valueOf(item.getQuantity())));
-//        return dto;
-//    }
 
     @Override
     @Transactional
